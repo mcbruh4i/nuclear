@@ -10,12 +10,14 @@ Live handoff document. Every claim lists how to verify it yourself.
 | PLAN.md (7 sections) written and committed (8b58ef05); copy at `C:\Users\Ali\nuclear-PLAN.md` | read PLAN.md; `git log --oneline` |
 | pnpm 10.33.4 installed globally (matches `packageManager` pin) | `pnpm --version` |
 
+| Toolchain installed (SETUP.md has every step + gotchas): rustup 1.97.1 GNU host + 4 Android targets, Android SDK (platform-tools, android-34, build-tools 34, NDK 27.1.12297006), winlibs mingw-w64 gcc 16.1.0 (host builds for sqlx-macros), NDK `llvm-dlltool` shim as `dlltool.exe` in `.cargo\bin`, user-scope env vars | `rustc --version; rustup target list --installed; sdkmanager --list_installed; gcc --version` (new shell) |
+| `pnpm install` clean (1m31s) | `pnpm install` again — no-op |
+| `tauri android init` succeeded → `packages/player/src-tauri/gen/android/` generated | dir exists with gradle project |
+| **Mandatory compile probe RUN — all 3 predicted breaks CONFIRMED** as the only Android-specific errors; +1 environmental error (`rust_embed` needs `../dist`). Full result in PLAN.md §7; raw log `cargo-check-android.log` (untracked) | re-run: see SETUP.md env, then `cargo check --target aarch64-linux-android` in `packages/player/src-tauri` |
+
 ## In progress
 
-- **Toolchain install** (SETUP.md documents every step):
-  - rustup (GNU host — see Blocked for why) + 4 Android targets
-  - Android SDK cmdline-tools → platform-tools, android-34, build-tools, NDK 27
-  - Then: `pnpm install` → `tauri android init` → `cargo check --target aarch64-linux-android` → record result in PLAN.md §7
+- **M0**: fix the three compile breaks (`#[cfg(desktop)]` gates + ytdlp mobile early-return), add `capabilities/mobile.json`, build frontend, get `cargo check` green, then `tauri android build` for the skeleton APK.
 
 ## Blocked
 
