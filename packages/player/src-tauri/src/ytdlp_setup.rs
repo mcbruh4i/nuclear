@@ -50,6 +50,12 @@ fn release_filename() -> &'static str {
     {
         "yt-dlp_win_arm64.zip"
     }
+    // yt-dlp cannot run on mobile (no exec of downloaded binaries since Android API 29);
+    // ytdlp_ensure_installed early-returns before this value is ever used.
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        "yt-dlp-unsupported.zip"
+    }
 }
 
 fn binary_name() -> &'static str {
@@ -72,6 +78,11 @@ fn binary_name() -> &'static str {
     #[cfg(all(target_os = "windows", target_arch = "aarch64"))]
     {
         "yt-dlp_win_arm64.exe"
+    }
+    // See release_filename(): unreachable on mobile at runtime.
+    #[cfg(any(target_os = "android", target_os = "ios"))]
+    {
+        "yt-dlp-unsupported"
     }
 }
 
@@ -319,6 +330,11 @@ async fn check_for_update(ytdlp_dir: &Path, binary_path: &Path) {
 #[command]
 #[specta::specta]
 pub async fn ytdlp_ensure_installed(app_handle: AppHandle) -> Result<bool, String> {
+    if cfg!(any(target_os = "android", target_os = "ios")) {
+        info!("[yt-dlp] Not available on mobile platforms; skipping install");
+        return Ok(false);
+    }
+
     let ytdlp_dir = ytdlp_dir(&app_handle)?;
     let binary_path = ytdlp_dir.join(binary_name());
 

@@ -69,8 +69,6 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let is_flatpak = std::env::var("FLATPAK_ID").is_ok();
-
     let specta_builder = specta_builder();
 
     #[cfg(debug_assertions)]
@@ -91,13 +89,18 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_upload::init())
-        .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(setup::log_plugin());
 
-    if !is_flatpak {
-        builder = builder
-            .plugin(tauri_plugin_updater::Builder::new().build())
-            .plugin(tauri_plugin_process::init());
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
+
+        let is_flatpak = std::env::var("FLATPAK_ID").is_ok();
+        if !is_flatpak {
+            builder = builder
+                .plugin(tauri_plugin_updater::Builder::new().build())
+                .plugin(tauri_plugin_process::init());
+        }
     }
 
     builder

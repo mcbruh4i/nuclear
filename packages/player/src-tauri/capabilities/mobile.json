@@ -1,0 +1,8 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Capabilities required only on mobile. capabilities/default.json is not platform-scoped and applies everywhere; this adds what desktop.json grants exclusively to desktop but mobile also needs.",
+  "windows": ["main"],
+  "platforms": ["android", "iOS"],
+  "permissions": ["os:default"]
+}
