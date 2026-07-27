@@ -15,15 +15,21 @@ Live handoff document. Every claim lists how to verify it yourself.
 | `tauri android init` succeeded → `packages/player/src-tauri/gen/android/` generated | dir exists with gradle project |
 | **Mandatory compile probe RUN — all 3 predicted breaks CONFIRMED** as the only Android-specific errors; +1 environmental error (`rust_embed` needs `../dist`). Full result in PLAN.md §7; raw log `cargo-check-android.log` (untracked) | re-run: see SETUP.md env, then `cargo check --target aarch64-linux-android` in `packages/player/src-tauri` |
 
+| **M0 build half done — debug APK builds.** Compile fixes committed (6c2e1bfc): `#[cfg(desktop)]` gates in `lib.rs`, ytdlp mobile arms + early return, `capabilities/mobile.json`, `gen/android` committed. `cargo check --target aarch64-linux-android` green. `tauri android build --debug --target aarch64` produced `gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk` (85.7 MB). Build used `CARGO_PROFILE_DEV_DEBUG=false`, `CARGO_INCREMENTAL=0` (disk). | rebuild: SETUP.md env + `pnpm exec tauri android build --debug --target aarch64` in `packages/player` |
+
 ## In progress
 
-- **M0**: fix the three compile breaks (`#[cfg(desktop)]` gates + ytdlp mobile early-return), add `capabilities/mobile.json`, build frontend, get `cargo check` green, then `tauri android build` for the skeleton APK.
+- **M0 DoD (on-device render)**: hypervisor present (`HypervisorPresent=True`, vmcompute running) → installing emulator + android-34 x86_64 system image, then headless AVD boot + `adb install` + screenshot. If WHPX turns out unusable unelevated, DoD downgrades to "builds" per run rules and is marked unverified.
 
 ## Blocked
 
 | Item | Blocked on | Consequence / workaround |
 |---|---|---|
 | VS 2022 Build Tools (MSVC) | Installer needs UAC elevation; shell is unelevated and run is unattended (winget exit 1602) | Using self-contained `x86_64-pc-windows-gnu` Rust host toolchain instead — fully sufficient for Android cross-compilation. MSVC only needed if building the Windows *desktop* app on this machine later. |
+
+## ⚠ Disk pressure (needs your attention)
+
+C: (201 GB) hit **100% full** mid-build — the first APK build died with os error 112. The Android toolchain is ~7 GB (NDK 4.2, SDK ~1.5, mingw 1.3) and a debug Rust target dir peaked at 7.7 GB. I recovered ~8.4 GB by deleting everything temporary I created (scratchpad clone, downloaded zips) plus the target dir, and switched the build to `CARGO_PROFILE_DEV_DEBUG=false` + `CARGO_INCREMENTAL=0` to keep the rebuilt target dir small. **The machine still has only ~8 GB of headroom, all of it consumed/produced by this project's builds — freeing another 20+ GB of your own data would make this workflow comfortable.** I did not delete anything of yours.
 
 ## Not started
 
