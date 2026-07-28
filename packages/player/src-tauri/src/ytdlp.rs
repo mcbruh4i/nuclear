@@ -1,7 +1,12 @@
+#[cfg(desktop)]
 use log::{debug, error};
+#[cfg(desktop)]
 use std::process::{Command, Stdio};
 use std::sync::RwLock;
 use tauri::command;
+
+#[cfg(mobile)]
+use log::debug;
 
 static YTDLP_PATH: RwLock<Option<String>> = RwLock::new(None);
 
@@ -12,6 +17,7 @@ pub fn set_ytdlp_path(path: String) {
     }
 }
 
+#[cfg(desktop)]
 fn get_ytdlp_path() -> Result<String, String> {
     match YTDLP_PATH.read() {
         Ok(guard) => match guard.as_ref() {
@@ -68,6 +74,7 @@ pub struct YtdlpPlaylistInfo {
     pub entries: Vec<YtdlpPlaylistEntry>,
 }
 
+#[cfg(any(desktop, test))]
 #[derive(serde::Deserialize)]
 struct YtdlpJson {
     id: Option<String>,
@@ -83,6 +90,7 @@ struct YtdlpJson {
     channel: Option<String>,
 }
 
+#[cfg(desktop)]
 fn run_ytdlp(args: &[&str]) -> Result<String, String> {
     let program = get_ytdlp_path()?;
     let mut cmd = Command::new(&program);
@@ -109,6 +117,7 @@ fn run_ytdlp(args: &[&str]) -> Result<String, String> {
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
+#[cfg(any(desktop, test))]
 fn parse_ndjson_entries(stdout: &str) -> Vec<YtdlpJson> {
     stdout
         .lines()
@@ -123,6 +132,11 @@ pub async fn ytdlp_search(
     query: String,
     max_results: Option<u32>,
 ) -> Result<Vec<YtdlpSearchResult>, String> {
+    #[cfg(mobile)]
+    return crate::ytdlp_mobile::search(query, max_results).await;
+
+    #[cfg(desktop)]
+    {
     let limit = max_results.unwrap_or(10);
     debug!("[yt-dlp] Searching: {} (limit: {})", query, limit);
 
@@ -155,11 +169,17 @@ pub async fn ytdlp_search(
 
     debug!("[yt-dlp] Found {} results", results.len());
     Ok(results)
+    }
 }
 
 #[command]
 #[specta::specta]
 pub async fn ytdlp_get_stream(video_id: String) -> Result<YtdlpStreamInfo, String> {
+    #[cfg(mobile)]
+    return crate::ytdlp_mobile::get_stream(video_id).await;
+
+    #[cfg(desktop)]
+    {
     debug!("[yt-dlp] Getting stream for: {}", video_id);
 
     let url = format!("https://www.youtube.com/watch?v={}", video_id);
@@ -195,11 +215,17 @@ pub async fn ytdlp_get_stream(video_id: String) -> Result<YtdlpStreamInfo, Strin
         container: info.ext,
         codec: info.acodec,
     })
+    }
 }
 
 #[command]
 #[specta::specta]
 pub async fn ytdlp_get_playlist(url: String) -> Result<YtdlpPlaylistInfo, String> {
+    #[cfg(mobile)]
+    return crate::ytdlp_mobile::get_playlist(url).await;
+
+    #[cfg(desktop)]
+    {
     debug!("[yt-dlp] Getting playlist: {}", url);
 
     let stdout = run_ytdlp(&["--dump-json", "--flat-playlist", "--no-warnings", &url])?;
@@ -242,6 +268,7 @@ pub async fn ytdlp_get_playlist(url: String) -> Result<YtdlpPlaylistInfo, String
         title: playlist_title,
         entries,
     })
+    }
 }
 
 #[cfg(test)]

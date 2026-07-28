@@ -13,6 +13,8 @@ pub mod pagination;
 mod setup;
 pub mod stream_server;
 pub mod ytdlp;
+#[cfg(mobile)]
+pub mod ytdlp_mobile;
 pub mod ytdlp_setup;
 
 // Maximizes the window when running as a non-steam app in steam
@@ -114,6 +116,9 @@ pub fn run() {
             stream_server::init_stream_server(app.handle().clone());
             discord::init_discord(app.handle().clone());
             history::init_history(app.handle().clone());
+
+            #[cfg(mobile)]
+            ytdlp_mobile::init(app.handle());
 
             #[cfg(target_os = "linux")]
             maximize_for_gamescope(app);
